@@ -57,4 +57,4 @@ class MainView:
         records_per_batch = self.records_entry.get().strip()
 
         # Call the handle_submit function from data_controller
-        handle_submit(caseid_pattern, int(records_per_batch) if records_per_batch else 1000)
+        handle_submit(caseid_pattern, int(records_per_batch) if records_per_batch else 1000) 

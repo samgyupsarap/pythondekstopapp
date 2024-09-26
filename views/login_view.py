@@ -56,7 +56,9 @@ class LoginView:
             width=self.entry_width,
             fg_color="#0073c2",  # Button background color
             hover_color="#448ec2",  # Hover background color
-            text_color="white"  # Text color
+            text_color="white", # Text color
+            border_color="#000000",
+            
         )
         self.canvas.create_window(250, 580, window=self.login_button)
 
