@@ -56,7 +56,7 @@ def fetch_all_data(caseid_pattern, max_limit):
         messagebox.showerror("API Error", f"Failed to fetch data: {e}")
         return None
 
-def process_batches(parent_folder_path, caseid_pattern, records_per_batch):
+def process_batches(parent_folder_path, caseid_pattern, records_per_batch, progress_label, progress_bar, on_complete_callback):
     """Process batches based on the number of records per batch and total records in the API."""
     global num_batches
 
@@ -78,21 +78,10 @@ def process_batches(parent_folder_path, caseid_pattern, records_per_batch):
     total_records = len(all_caseids)
     num_batches = (total_records + records_per_batch - 1) // records_per_batch
 
-    fetch_batches(all_caseids, main_batch_folder, caseid_pattern, records_per_batch)
+    fetch_batches(all_caseids, main_batch_folder, caseid_pattern, records_per_batch, progress_label, progress_bar, on_complete_callback)
 
-def fetch_batches(all_caseids, main_batch_folder, caseid_pattern, records_per_batch):
+def fetch_batches(all_caseids, main_batch_folder, caseid_pattern, records_per_batch, progress_label, progress_bar, on_complete_callback):
     """Handle the fetching of batches and show progress."""
-    progress_window = ctk.CTkToplevel()
-    progress_window.title("Fetching Data")
-    progress_window.geometry("300x150")
-
-    progress_label = ctk.CTkLabel(progress_window, text="Starting batch processing...")
-    progress_label.pack(pady=10)
-
-    progress_bar = ctk.CTkProgressBar(progress_window, width=250)
-    progress_bar.pack(pady=10)
-    progress_bar.set(0)
-
     def save_batch(batch_no):
         start_index = (batch_no - 1) * records_per_batch
         end_index = min(start_index + records_per_batch, len(all_caseids))
@@ -113,10 +102,8 @@ def fetch_batches(all_caseids, main_batch_folder, caseid_pattern, records_per_ba
             executor.submit(save_batch, batch_no)
             time.sleep(0.5)
 
-    progress_label.configure(text="All batches completed!")
-    progress_bar.set(1)
-    progress_window.update()
-    progress_window.after(2000, lambda: (progress_window.destroy(), open_extract_view(num_batches, main_batch_folder, caseid_pattern)))
+    # Call the completion callback
+    on_complete_callback()
 
 def open_extract_view(num_batches, parent_folder_path, caseid_pattern):
     """Open the ExtractView in a new window after batch processing is complete."""
@@ -151,7 +138,28 @@ def handle_submit(caseid_pattern, records_per_batch):
     if not confirm:
         return
 
-    threading.Thread(target=process_batches, args=(folder_path, caseid_pattern, records_per_batch)).start()
+    # Immediately show the progress window before starting the processing
+    progress_window = ctk.CTkToplevel()
+    progress_window.title("Fetching Data")
+    progress_window.geometry("300x150")
+    progress_window.grab_set()  # Make this window modal
+
+    progress_label = ctk.CTkLabel(progress_window, text="Starting batch processing...")
+    progress_label.pack(pady=10)
+
+    progress_bar = ctk.CTkProgressBar(progress_window, width=250)
+    progress_bar.pack(pady=10)
+    progress_bar.set(0)
+
+    # Function to update the progress and close the window
+    def on_batches_complete():
+        progress_label.configure(text="All batches completed!")
+        progress_bar.set(1)
+        progress_window.update()
+        # Close the progress window after a delay
+        progress_window.after(2000, lambda: (progress_window.destroy(), open_extract_view(num_batches, folder_path, caseid_pattern)))
+
+    threading.Thread(target=process_batches, args=(folder_path, caseid_pattern, records_per_batch, progress_label, progress_bar, on_batches_complete)).start()
 
 # Main execution code or the main Tkinter app code
 if __name__ == "__main__":
@@ -165,4 +173,4 @@ if __name__ == "__main__":
     submit_button = ctk.CTkButton(root, text="Submit", command=lambda: handle_submit(caseid_pattern, records_per_batch))
     submit_button.pack(pady=20)
 
-    root.mainloop()  # Start the Tkinter event loop
+    root.mainloop()  # Start the Tkinter event loop 
