@@ -56,7 +56,7 @@ def fetch_all_data(caseid_pattern, max_limit):
         messagebox.showerror("API Error", f"Failed to fetch data: {e}")
         return None
 
-def process_batches(parent_folder_path, caseid_pattern, records_per_batch, progress_label, progress_bar, on_complete_callback):
+def process_batches(parent_folder_path, caseid_pattern, records_per_batch, progress_label, progress_bar, progress_window, on_complete_callback):
     """Process batches based on the number of records per batch and total records in the API."""
     global num_batches
 
@@ -78,9 +78,9 @@ def process_batches(parent_folder_path, caseid_pattern, records_per_batch, progr
     total_records = len(all_caseids)
     num_batches = (total_records + records_per_batch - 1) // records_per_batch
 
-    fetch_batches(all_caseids, main_batch_folder, caseid_pattern, records_per_batch, progress_label, progress_bar, on_complete_callback)
+    fetch_batches(all_caseids, main_batch_folder, caseid_pattern, records_per_batch, progress_label, progress_bar, progress_window, on_complete_callback)
 
-def fetch_batches(all_caseids, main_batch_folder, caseid_pattern, records_per_batch, progress_label, progress_bar, on_complete_callback):
+def fetch_batches(all_caseids, main_batch_folder, caseid_pattern, records_per_batch, progress_label, progress_bar, progress_window, on_complete_callback):
     """Handle the fetching of batches and show progress."""
     def save_batch(batch_no):
         start_index = (batch_no - 1) * records_per_batch
@@ -95,7 +95,7 @@ def fetch_batches(all_caseids, main_batch_folder, caseid_pattern, records_per_ba
 
         progress_label.configure(text=f"Completed Batch {batch_no}/{num_batches}")
         progress_bar.set(batch_no / num_batches)
-        progress_window.update()
+        progress_window.update()  # Use the passed progress_window
 
     with ThreadPoolExecutor(max_workers=10) as executor:
         for batch_no in range(1, num_batches + 1):
@@ -159,7 +159,7 @@ def handle_submit(caseid_pattern, records_per_batch):
         # Close the progress window after a delay
         progress_window.after(2000, lambda: (progress_window.destroy(), open_extract_view(num_batches, folder_path, caseid_pattern)))
 
-    threading.Thread(target=process_batches, args=(folder_path, caseid_pattern, records_per_batch, progress_label, progress_bar, on_batches_complete)).start()
+    threading.Thread(target=process_batches, args=(folder_path, caseid_pattern, records_per_batch, progress_label, progress_bar, progress_window, on_batches_complete)).start()
 
 # Main execution code or the main Tkinter app code
 if __name__ == "__main__":
@@ -173,4 +173,4 @@ if __name__ == "__main__":
     submit_button = ctk.CTkButton(root, text="Submit", command=lambda: handle_submit(caseid_pattern, records_per_batch))
     submit_button.pack(pady=20)
 
-    root.mainloop()  # Start the Tkinter event loop 
+    root.mainloop()  # Start the Tkinter event loop  

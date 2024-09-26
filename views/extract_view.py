@@ -2,6 +2,8 @@ import customtkinter as ctk
 from PIL import Image, ImageTk
 from controllers.extract_controller import run_extract_script
 
+ctk.set_appearance_mode("light")
+
 class ExtractView:
     def __init__(self, root, max_batches, parent_folder_path, caseid_pattern):
         self.root = root
